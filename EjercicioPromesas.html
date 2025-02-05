@@ -6,8 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ejercicio Promesas</title>
     <style>
-        
-        body{
+        body {
             background-color: red;
             color: white;
         }
@@ -16,7 +15,7 @@
             text-align: center;
         }
 
-        #contenedor div{
+        #contenedor div {
             background-color: gray;
             margin: 5px;
             text-align: center;
@@ -28,79 +27,109 @@
             display: flex;
             flex-wrap: wrap;
             align-items: center;
+            justify-content: center;
         }
+
+        #a{
+            font-size: x-large;
+        }
+
     </style>
 </head>
+
 <body>
     <h1>POKEAPI</h1>
     <div id="contenedor"></div>
-    <button>Descargar PDF</button>
+    <p id="a">Habilidades:</p>
     <script>
         var url_Api = "https://pokeapi.co/api/v2/pokemon";
 
         function obtenerDatos() {
-            return new Promise(async (resolve, reject)=>{
-                
+            return new Promise(async (resolve, reject) => {
+
                 const resultado = await fetch(url_Api);
 
                 if (resultado.ok) {
                     const datos = await resultado.json();
+                    
                     resolve(datos.results);
-                }else{
+                } else {
                     reject("No se han podido obtener los datos")
                 }
-            
-            }) 
-        
+
+            })
+
         }
 
         function obtenerImagenesPokemon(url_imagen) {
-            return new Promise(async(resolve, reject)=>{
+            return new Promise(async (resolve, reject) => {
                 const resultado = await fetch(url_imagen);
-               
-                if(resultado.ok){
+
+                if (resultado.ok) {
                     const datos = await resultado.json();
-                 resolve(datos.sprites.front_default); 
-                }else{
+                    resolve(datos.sprites.front_default);
+                } else {
                     reject("No se han podido obtener las imagenes de los pokemon")
                 }
             })
         }
 
-       function obtenerDatosPokemon(datos) {
-            return new Promise(async(resolve, reject)=>{
-                class Pokemon {
-                constructor(nombre, imagen) {
-                    this.nombre = nombre;
-                    this.imagen = imagen;
+        function obtenerHabilidadesPokemon(url_pokemon){
+            return new Promise(async (resolve, reject) => {
+                const resultado = await fetch(url_pokemon);
+
+                if (resultado.ok) {
+                    const datos = await resultado.json();
+                    resolve(datos.abilities);
+                } else {
+                    reject("No se han podido obtener las imagenes de los pokemon")
                 }
-            }
+            })
+        }
 
-            if (!Array.isArray(datos)) {
-                throw new Error("Los datos no tienen el formato adecuado");
-            }
+        function obtenerDatosPokemon(datos) {
+            return new Promise(async (resolve, reject) => {
+                class Pokemon {
+                    constructor(nombre, imagen, habilidades) {
+                        this.nombre = nombre;
+                        this.imagen = imagen;
+                        this.habilidades = habilidades
+                    }
+                }
 
-            const pokemons = await Promise.all(
-                datos.map(async (dato) => {
-                    const imagen = await obtenerImagenesPokemon(dato.url);
-                    return new Pokemon(dato.name, imagen);
-                })
-            );
-            resolve(pokemons);
+                if (!Array.isArray(datos)) {
+                    throw new Error("Los datos no tienen el formato adecuado");
+                }
+                let i=0;
+                const pokemons = await Promise.all(
+                    datos.map(async (dato) => {
+                        const imagen = await obtenerImagenesPokemon(dato.url);   
+                        const habilidades = await obtenerHabilidadesPokemon(dato.url)
+                        const nombresHabilidades = habilidades.map(habilidad => habilidad.ability.name);
+
+                        return new Pokemon(dato.name, imagen, nombresHabilidades);
+                    })
+                );
+                resolve(pokemons);
             })
         }
 
         function mostrarPokemons(datosPokemon) {
             var contenedor = document.getElementById("contenedor");
-            let i = 0;
+            let parrafoHabilidades = document.getElementById("a");
+            
             datosPokemon.forEach(datos => {
                 const div = document.createElement("div");
                 const p = document.createElement("p");
                 const img = document.createElement("img");
 
                 p.textContent = datos.nombre;
+                p.id="nombrePokemons"
                 img.src = datos.imagen;
-                div.id = i++;
+
+                p.addEventListener('click', ()=>{
+                    parrafoHabilidades.textContent = `Habilidades: ${datos.habilidades}`;                
+                });
 
                 div.appendChild(p);
                 div.appendChild(img);
@@ -114,11 +143,11 @@
                 return obtenerDatosPokemon(datos);
             })
             .then((datosPokemons) => {
-                return mostrarPokemons(datosPokemons);
+                mostrarPokemons(datosPokemons);
             })
             .catch((error) => {
                 alert(error);
-            });
+            })
     </script>
 </body>
 
